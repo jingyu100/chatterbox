@@ -1,2 +1,2 @@
 # chatterbox
-A microservices-based real-time chat platform built with Spring Cloud
+A microservices-based real-time chat platform built with React

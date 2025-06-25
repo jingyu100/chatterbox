@@ -1,0 +1,4 @@
+rootProject.name = 'chatterbox'
+include 'services:eureka-service'
+include 'services:gateway-service'
+include 'services:user-service'
