@@ -52,7 +52,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             String token = authHeader.substring(7);
             Claims claims = validateToken(token);
 
-            // 사용자 정보를 헤더에 추가 
+            // 사용자 정보를 헤더에 추가
             ServerHttpRequest modifiedRequest = request.mutate()
                     .header("X-User-Id", claims.get("userId", String.class))
                     .header("X-Username", claims.getSubject())
