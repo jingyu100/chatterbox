@@ -7,7 +7,6 @@ import com.chatterbox.user_service.dto.SignupResponse;
 import com.chatterbox.user_service.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,12 +17,12 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/signup")
-    public ResponseEntity<SignupResponse> signup(@ResponseBody SignupRequest signupRequest) {
+    public ResponseEntity<SignupResponse> signup(@RequestBody SignupRequest signupRequest) {
         return authService.signup(signupRequest);
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<SigninResponse> signin(@ResponseBody SigninRequest signinRequest) {
+    public ResponseEntity<SigninResponse> signin(@RequestBody SigninRequest signinRequest) {
         return authService.signin(signinRequest);
     }
 }
