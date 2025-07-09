@@ -7,10 +7,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -24,10 +26,17 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    @Value("${token.accessTokenName}")
+    private String accessTokenName;
+
+    @Value("${token.refreshTokenName}")
+    private String refreshTokenName;
+
     // 인증이 필요없는 경로들
     private static final List<String> EXCLUDED_PATHS = List.of(
             "/api/auth/login",
-            "/api/auth/register",
+            "/api/auth/signin",
+            "/api/auth/signup",
             "/eureka"
     );
 
@@ -41,16 +50,21 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        // Authorization 헤더 확인
-        String authHeader = request.getHeaders().getFirst("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // 토큰 추출 (Authorization 헤더 또는 쿠키에서)
+        String token = extractToken(request);
+
+        if (token == null) {
             return handleUnauthorized(exchange);
         }
 
         try {
             // JWT 토큰 검증
-            String token = authHeader.substring(7);
             Claims claims = validateToken(token);
+
+            // 액세스 토큰인지 확인
+            if (!"access".equals(claims.get("type"))) {
+                return handleUnauthorized(exchange);
+            }
 
             // 사용자 정보를 헤더에 추가
             ServerHttpRequest modifiedRequest = request.mutate()
@@ -65,10 +79,38 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
     }
 
+    /**
+     * Authorization 헤더 또는 쿠키에서 토큰 추출
+     */
+    private String extractToken(ServerHttpRequest request) {
+        // 1. Authorization 헤더에서 토큰 추출
+        String authHeader = request.getHeaders().getFirst("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        // 2. 쿠키에서 토큰 추출
+        MultiValueMap<String, HttpCookie> cookies = request.getCookies();
+        if (cookies.containsKey(accessTokenName)) {
+            HttpCookie cookie = cookies.getFirst(accessTokenName);
+            if (cookie != null) {
+                return cookie.getValue();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 제외 경로 확인
+     */
     private boolean isExcludedPath(String path) {
         return EXCLUDED_PATHS.stream().anyMatch(path::startsWith);
     }
 
+    /**
+     * JWT 토큰 검증
+     */
     private Claims validateToken(String token) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         return Jwts.parserBuilder()
@@ -78,6 +120,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .getBody();
     }
 
+    /**
+     * 인증 실패 처리
+     */
     private Mono<Void> handleUnauthorized(ServerWebExchange exchange) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
