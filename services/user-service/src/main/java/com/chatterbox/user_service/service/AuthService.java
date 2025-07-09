@@ -95,7 +95,7 @@ public class AuthService {
                             !signupRequest.getProfileImageUrl().trim().isEmpty() ?
                             signupRequest.getProfileImageUrl().trim() : "default-profile.png")
 //                    .status('A') // Active
-                    .status(UserStatus.ACTIVE)
+                    .status(UserStatus.ACTIVE.name().charAt(0))
                     .build();
 
             Member savedMember = memberRepository.save(member);

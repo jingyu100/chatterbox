@@ -12,10 +12,14 @@ public class SecurityConfig {
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-        return http.
-                authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/api/auth/**").permitAll()
+        return http
+                .csrf(csrf -> csrf.disable())
+                .formLogin(formLogin -> formLogin.disable())
+                .httpBasic(httpBasic -> httpBasic.disable())
+                .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers("/api/auth/**", "/eureka/**").permitAll()
                         .anyExchange().authenticated()
-                ).build();
+                )
+                .build();
     }
 }
