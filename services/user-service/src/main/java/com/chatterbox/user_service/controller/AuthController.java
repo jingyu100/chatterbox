@@ -29,11 +29,47 @@ public class AuthController {
         return authService.signin(signinRequest, response);
     }
 
+    @PostMapping("/refresh")
+    public ResponseEntity<TokenRefreshResponse> refresh(
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        String refreshToken = cookieUtil.getCookieValue(request, cookieUtil.REFRESH_TOKEN_COOKIE_NAME);
+        return authService.refreshToken(refreshToken, response);
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<SignupResponse> logout(
             HttpServletRequest request,
             HttpServletResponse response) {
-        String refreshToken = cookieUtil.getCookieValue(request, CookieUtil.REFRESH_TOKEN_COOKIE_NAME);
+        String refreshToken = cookieUtil.getCookieValue(request, cookieUtil.REFRESH_TOKEN_COOKIE_NAME);
         return authService.logout(refreshToken, response);
+    }
+
+    @PostMapping("/validate")
+    public ResponseEntity<SignupResponse> validateToken(
+            HttpServletRequest request) {
+        String accessToken = cookieUtil.getCookieValue(request, cookieUtil.ACCESS_TOKEN_COOKIE_NAME);
+        if (accessToken == null) {
+            // Authorization 헤더에서 추출 시도
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                accessToken = authHeader.substring(7);
+            }
+        }
+        return authService.validateAccessToken(accessToken);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<SigninResponse> getUserInfo(
+            HttpServletRequest request) {
+        String accessToken = cookieUtil.getCookieValue(request, cookieUtil.ACCESS_TOKEN_COOKIE_NAME);
+        if (accessToken == null) {
+            // Authorization 헤더에서 추출 시도
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                accessToken = authHeader.substring(7);
+            }
+        }
+        return authService.getUserInfo(accessToken);
     }
 }

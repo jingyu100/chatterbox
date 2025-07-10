@@ -15,21 +15,27 @@ public class CookieUtil {
     @Value("${app.cookie.secure}")
     private boolean secure;
 
-    @Value("${app.cookie.secure}")
+    @Value("${token.accessTokenName}")
     private String accessTokenName;
 
-    @Value("${app.cookie.secure}")
+    @Value("${token.refreshTokenName}")
     private String refreshTokenName;
+
+    // 쿠키 이름 상수
+    public final String ACCESS_TOKEN_COOKIE_NAME = "accessToken";
+    public final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
 
     /**
      * 액세스 토큰 쿠키 생성
      */
     public void createAccessTokenCookie(HttpServletResponse response, String accessToken, Long maxAge) {
-        Cookie cookie = new Cookie(accessTokenName, accessToken);
+        Cookie cookie = new Cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken);
         cookie.setHttpOnly(true);
         cookie.setSecure(secure);
         cookie.setPath("/");
-        cookie.setDomain(cookieDomain);
+        if (cookieDomain != null && !cookieDomain.isEmpty()) {
+            cookie.setDomain(cookieDomain);
+        }
         cookie.setMaxAge(maxAge.intValue() / 1000); // 초 단위로 변환
         response.addCookie(cookie);
     }
@@ -38,11 +44,13 @@ public class CookieUtil {
      * 리프레시 토큰 쿠키 생성
      */
     public void createRefreshTokenCookie(HttpServletResponse response, String refreshToken, Long maxAge) {
-        Cookie cookie = new Cookie(refreshTokenName, refreshToken);
+        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken);
         cookie.setHttpOnly(true);
         cookie.setSecure(secure);
         cookie.setPath("/");
-        cookie.setDomain(cookieDomain);
+        if (cookieDomain != null && !cookieDomain.isEmpty()) {
+            cookie.setDomain(cookieDomain);
+        }
         cookie.setMaxAge(maxAge.intValue() / 1000); // 초 단위로 변환
         response.addCookie(cookie);
     }
@@ -69,7 +77,9 @@ public class CookieUtil {
         cookie.setHttpOnly(true);
         cookie.setSecure(secure);
         cookie.setPath("/");
-        cookie.setDomain(cookieDomain);
+        if (cookieDomain != null && !cookieDomain.isEmpty()) {
+            cookie.setDomain(cookieDomain);
+        }
         cookie.setMaxAge(0);
         response.addCookie(cookie);
     }
@@ -78,7 +88,7 @@ public class CookieUtil {
      * 모든 인증 관련 쿠키 삭제
      */
     public void deleteAllAuthCookies(HttpServletResponse response) {
-        deleteCookie(response, accessTokenName);
-        deleteCookie(response, refreshTokenName);
+        deleteCookie(response, ACCESS_TOKEN_COOKIE_NAME);
+        deleteCookie(response, REFRESH_TOKEN_COOKIE_NAME);
     }
 }

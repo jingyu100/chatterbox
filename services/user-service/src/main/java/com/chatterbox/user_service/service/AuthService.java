@@ -94,7 +94,6 @@ public class AuthService {
                     .profileImageUrl(signupRequest.getProfileImageUrl() != null &&
                             !signupRequest.getProfileImageUrl().trim().isEmpty() ?
                             signupRequest.getProfileImageUrl().trim() : "default-profile.png")
-//                    .status('A') // Active
                     .status(UserStatus.ACTIVE.name().charAt(0))
                     .build();
 
@@ -131,9 +130,6 @@ public class AuthService {
                         .body(SigninResponse.builder()
                                 .success(false)
                                 .message("이메일은 필수입니다.")
-                                .accessToken(null)
-                                .nickname(null)
-                                .memberId(null)
                                 .build());
             }
 
@@ -142,9 +138,6 @@ public class AuthService {
                         .body(SigninResponse.builder()
                                 .success(false)
                                 .message("비밀번호는 필수입니다.")
-                                .accessToken(null)
-                                .nickname(null)
-                                .memberId(null)
                                 .build());
             }
 
@@ -157,9 +150,6 @@ public class AuthService {
                         .body(SigninResponse.builder()
                                 .success(false)
                                 .message("존재하지 않는 이메일입니다.")
-                                .accessToken(null)
-                                .nickname(null)
-                                .memberId(null)
                                 .build());
             }
 
@@ -172,9 +162,6 @@ public class AuthService {
                         .body(SigninResponse.builder()
                                 .success(false)
                                 .message("비밀번호가 일치하지 않습니다.")
-                                .accessToken(null)
-                                .nickname(null)
-                                .memberId(null)
                                 .build());
             }
 
@@ -185,9 +172,6 @@ public class AuthService {
                         .body(SigninResponse.builder()
                                 .success(false)
                                 .message("비활성화된 계정입니다.")
-                                .accessToken(null)
-                                .nickname(null)
-                                .memberId(null)
                                 .build());
             }
 
@@ -219,17 +203,14 @@ public class AuthService {
                     .body(SigninResponse.builder()
                             .success(false)
                             .message("로그인 중 오류가 발생했습니다.")
-                            .accessToken(null)
-                            .nickname(null)
-                            .memberId(null)
                             .build());
         }
     }
 
     /**
-     * 토큰 갱신
+     * 토큰 갱신 (Refresh Token Rotation 포함)
      */
-    public ResponseEntity<SigninResponse> refreshToken(String refreshToken, HttpServletResponse response) {
+    public ResponseEntity<TokenRefreshResponse> refreshToken(String refreshToken, HttpServletResponse response) {
         log.info("토큰 갱신 시도");
 
         try {
@@ -237,7 +218,7 @@ public class AuthService {
             if (refreshToken == null || refreshToken.trim().isEmpty()) {
                 log.warn("리프레시 토큰이 비어있음");
                 return ResponseEntity.badRequest()
-                        .body(SigninResponse.builder()
+                        .body(TokenRefreshResponse.builder()
                                 .success(false)
                                 .message("리프레시 토큰이 필요합니다.")
                                 .build());
@@ -247,7 +228,7 @@ public class AuthService {
             if (!refreshTokenService.validateRefreshToken(refreshToken.trim())) {
                 log.warn("유효하지 않은 리프레시 토큰");
                 return ResponseEntity.badRequest()
-                        .body(SigninResponse.builder()
+                        .body(TokenRefreshResponse.builder()
                                 .success(false)
                                 .message("유효하지 않은 리프레시 토큰입니다.")
                                 .build());
@@ -258,7 +239,7 @@ public class AuthService {
             if (userId == null) {
                 log.warn("리프레시 토큰에서 사용자 ID를 찾을 수 없음");
                 return ResponseEntity.badRequest()
-                        .body(SigninResponse.builder()
+                        .body(TokenRefreshResponse.builder()
                                 .success(false)
                                 .message("리프레시 토큰에서 사용자 정보를 찾을 수 없습니다.")
                                 .build());
@@ -268,10 +249,9 @@ public class AuthService {
             Optional<Member> memberOptional = memberRepository.findById(userId);
             if (memberOptional.isEmpty()) {
                 log.warn("존재하지 않는 사용자 ID로 토큰 갱신 시도 - 사용자 ID: {}", userId);
-                // 유효하지 않은 사용자의 리프레시 토큰 삭제
                 refreshTokenService.deleteRefreshToken(refreshToken.trim());
                 return ResponseEntity.badRequest()
-                        .body(SigninResponse.builder()
+                        .body(TokenRefreshResponse.builder()
                                 .success(false)
                                 .message("존재하지 않는 사용자입니다.")
                                 .build());
@@ -282,31 +262,32 @@ public class AuthService {
             // 계정 상태 확인
             if (member.getStatus() != 'A') {
                 log.warn("비활성화된 계정으로 토큰 갱신 시도 - 사용자 ID: {}, 상태: {}", userId, member.getStatus());
-                // 비활성화된 계정의 리프레시 토큰 삭제
                 refreshTokenService.deleteRefreshToken(refreshToken.trim());
                 return ResponseEntity.badRequest()
-                        .body(SigninResponse.builder()
+                        .body(TokenRefreshResponse.builder()
                                 .success(false)
                                 .message("비활성화된 계정입니다.")
                                 .build());
             }
 
-            // 새로운 액세스 토큰 생성
-            String newAccessToken = jwtUtil.generateAccessToken(member.getEmail(), member.getId());
+            // 기존 리프레시 토큰 삭제 (Refresh Token Rotation)
+            refreshTokenService.deleteRefreshToken(refreshToken.trim());
 
-            // 리프레시 토큰 TTL 갱신
-            refreshTokenService.refreshTokenTTL(refreshToken.trim());
-
-            // 새로운 액세스 토큰을 쿠키에 저장
+            // 새로운 토큰들 생성
             TokenDto tokenDto = jwtUtil.generateTokens(member.getEmail(), member.getId());
-            cookieUtil.createAccessTokenCookie(response, newAccessToken, tokenDto.getAccessTokenExpiration());
+            String newRefreshToken = refreshTokenService.createRefreshToken(member.getId());
 
-            log.info("토큰 갱신 성공 - 사용자 ID: {}", member.getId());
+            // 쿠키에 새로운 토큰들 저장
+            cookieUtil.createAccessTokenCookie(response, tokenDto.getAccessToken(), tokenDto.getAccessTokenExpiration());
+            cookieUtil.createRefreshTokenCookie(response, newRefreshToken, tokenDto.getRefreshTokenExpiration());
 
-            return ResponseEntity.ok(SigninResponse.builder()
+            log.info("토큰 갱신 및 회전 성공 - 사용자 ID: {}", member.getId());
+
+            return ResponseEntity.ok(TokenRefreshResponse.builder()
                     .success(true)
                     .message("토큰이 갱신되었습니다.")
-                    .accessToken(newAccessToken)
+                    .accessToken(tokenDto.getAccessToken())
+                    .newRefreshToken(newRefreshToken)
                     .nickname(member.getNickname())
                     .memberId(member.getId())
                     .accessTokenExpiration(tokenDto.getAccessTokenExpiration())
@@ -315,7 +296,7 @@ public class AuthService {
         } catch (Exception e) {
             log.error("토큰 갱신 중 오류 발생", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(SigninResponse.builder()
+                    .body(TokenRefreshResponse.builder()
                             .success(false)
                             .message("토큰 갱신 중 오류가 발생했습니다.")
                             .build());

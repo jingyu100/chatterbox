@@ -1,8 +1,11 @@
 package com.chatterbox.gateway_service.dto;
 
-import lombok.Data;
+import lombok.*;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class TokenRefreshResponse {
 
     private boolean success;
@@ -13,4 +16,23 @@ public class TokenRefreshResponse {
     private Long accessTokenExpiration;
     private Long memberId;
 
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public String getNewRefreshToken() {
+        return newRefreshToken;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public Long getAccessTokenExpiration() {
+        return accessTokenExpiration;
+    }
+
+    public Long getMemberId() {
+        return memberId;
+    }
 }
