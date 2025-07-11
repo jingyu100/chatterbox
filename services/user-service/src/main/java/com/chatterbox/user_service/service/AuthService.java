@@ -180,7 +180,7 @@ public class AuthService {
 
             // 토큰 생성
             TokenDto tokenDto = jwtUtil.generateTokens(member.getEmail(), member.getId());
-            String refreshToken = refreshTokenService.createRefreshToken(member.getId());
+            String refreshToken = refreshTokenService.createRefreshToken(member.getId(), member.getEmail());
 
             // 쿠키에 토큰 저장
             cookieUtil.createAccessTokenCookie(response, tokenDto.getAccessToken(), tokenDto.getAccessTokenExpiration());
@@ -275,7 +275,7 @@ public class AuthService {
 
             // 새로운 토큰들 생성
             TokenDto tokenDto = jwtUtil.generateTokens(member.getEmail(), member.getId());
-            String newRefreshToken = refreshTokenService.createRefreshToken(member.getId());
+            String newRefreshToken = refreshTokenService.createRefreshToken(member.getId(), member.getEmail());
 
             // 쿠키에 새로운 토큰들 저장
             cookieUtil.createAccessTokenCookie(response, tokenDto.getAccessToken(), tokenDto.getAccessTokenExpiration());
