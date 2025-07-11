@@ -111,17 +111,17 @@ public class RefreshTokenService {
     /**
      * 리프레시 토큰 TTL 갱신
      */
-    public void refreshTokenTTL(String refreshToken) {
-        try {
-            Long userId = jwtUtil.getUserIdFromToken(refreshToken);
-            if (userId != null) {
-                String key = REFRESH_TOKEN_PREFIX + userId;
-                if (redisTemplate.hasKey(key)) {
-                    redisTemplate.expire(key, refreshTokenExpiration, TimeUnit.MILLISECONDS);
-                }
-            }
-        } catch (Exception e) {
-            // 토큰 파싱 실패 시 무시
-        }
-    }
+//    public void refreshTokenTTL(String refreshToken) {
+//        try {
+//            Long userId = jwtUtil.getUserIdFromToken(refreshToken);
+//            if (userId != null) {
+//                String key = REFRESH_TOKEN_PREFIX + userId;
+//                if (redisTemplate.hasKey(key)) {
+//                    redisTemplate.expire(key, refreshTokenExpiration, TimeUnit.MILLISECONDS);
+//                }
+//            }
+//        } catch (Exception e) {
+//            // 토큰 파싱 실패 시 무시
+//        }
+//    }
 }

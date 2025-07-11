@@ -491,30 +491,30 @@ public class AuthService {
     /**
      * 모든 세션 무효화 (모든 기기에서 로그아웃)
      */
-    public ResponseEntity<SignupResponse> logoutAllDevices(Long userId, HttpServletResponse response) {
-        log.info("모든 기기에서 로그아웃 시도 - 사용자 ID: {}", userId);
-
-        try {
-            // 해당 사용자의 모든 리프레시 토큰 삭제
-            refreshTokenService.deleteAllRefreshTokensByUserId(userId);
-
-            // 현재 요청의 쿠키도 삭제
-            cookieUtil.deleteAllAuthCookies(response);
-
-            log.info("모든 기기에서 로그아웃 완료 - 사용자 ID: {}", userId);
-
-            return ResponseEntity.ok(SignupResponse.builder()
-                    .success(true)
-                    .message("모든 기기에서 로그아웃되었습니다.")
-                    .build());
-
-        } catch (Exception e) {
-            log.error("모든 기기 로그아웃 중 오류 발생", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(SignupResponse.builder()
-                            .success(false)
-                            .message("로그아웃 처리 중 오류가 발생했습니다.")
-                            .build());
-        }
-    }
+//    public ResponseEntity<SignupResponse> logoutAllDevices(Long userId, HttpServletResponse response) {
+//        log.info("모든 기기에서 로그아웃 시도 - 사용자 ID: {}", userId);
+//
+//        try {
+//            // 해당 사용자의 모든 리프레시 토큰 삭제
+//            refreshTokenService.deleteAllRefreshTokensByUserId(userId);
+//
+//            // 현재 요청의 쿠키도 삭제
+//            cookieUtil.deleteAllAuthCookies(response);
+//
+//            log.info("모든 기기에서 로그아웃 완료 - 사용자 ID: {}", userId);
+//
+//            return ResponseEntity.ok(SignupResponse.builder()
+//                    .success(true)
+//                    .message("모든 기기에서 로그아웃되었습니다.")
+//                    .build());
+//
+//        } catch (Exception e) {
+//            log.error("모든 기기 로그아웃 중 오류 발생", e);
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body(SignupResponse.builder()
+//                            .success(false)
+//                            .message("로그아웃 처리 중 오류가 발생했습니다.")
+//                            .build());
+//        }
+//    }
 }
